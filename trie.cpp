@@ -6,6 +6,9 @@
 #include <vector>
 #include <algorithm>
 #include <sstream>
+#include <queue>
+#include <string>
+#include <regex>
 
 using namespace std;
 
@@ -27,7 +30,7 @@ private:
       Node(Node *parent, T value, bool end): 
          _parent(parent), _value(value), _end(end) {}
 
-      bool has_child(const T &key) {
+      bool has_child(const T &key) const {
          return _children.find(key) != _children.end();   
       }
 
@@ -40,16 +43,33 @@ private:
          return _children[key];
       }
 
-      T value() { return _value; }
+      T value() const { return _value; }
 
       map<T, Node *>& children() { return _children; }
 
-      bool operator==(const Node &other) { return _value == other._value; }
-      bool operator!=(const Node &other) { return _value != other._value; }
-      bool operator<(const Node &other) { return _value < other._value; }
-      bool operator>(const Node &other) { return _value > other._value; }
-      bool operator<=(const Node &other) { return _value <= other._value; }
-      bool operator>=(const Node &other) { return _value >= other._value; }
+      bool operator==(const Node &other) const { 
+         return _value == other._value;
+      }
+
+      bool operator!=(const Node &other) const { 
+         return _value != other._value;
+      }
+
+      bool operator<(const Node &other) const { 
+         return _value < other._value; 
+      }
+
+      bool operator>(const Node &other) const { 
+         return _value > other._value; 
+      }
+
+      bool operator<=(const Node &other) const { 
+         return _value <= other._value; 
+      }
+
+      bool operator>=(const Node &other) const { 
+         return _value >= other._value; 
+      }
 
       ~Node() {
          for (auto nit = _children.begin(); nit != _children.end(); ++nit)
@@ -59,13 +79,23 @@ private:
 
    Node *_root;
    function<vector<T>(T)> _split;
+   typedef priority_queue<Node *, vector<Node *>, 
+      function<bool(const Node *, const Node *)>> _NodePtrPQ; 
 
    string _dump(Node *n, const string &indent = "") {
       stringstream ss;
       ss << indent << n->value() << endl;
       auto children = n->children();
+      
+      _NodePtrPQ pq([](const Node *a, const Node *b) -> bool {
+         return *a > *b; });
+
       for (auto cit = children.begin(); cit != children.end(); ++cit)
-         ss << _dump(cit->second, indent + " ");
+         pq.push(cit->second);
+      while (!pq.empty()) {
+         ss << _dump(pq.top(), indent + " ");
+         pq.pop(); 
+      }
       return ss.str(); 
    }
 
@@ -105,7 +135,7 @@ public:
       assert(child_b >= child_a);
    }
 
-   void trie_insert_test() {
+   void trie_insert_int_test() {
       Trie<int> t([](int val) -> vector<int> {
          vector<int> v;
          while (val) {
@@ -115,17 +145,56 @@ public:
          reverse(v.begin(), v.end());
          return v; });
 
+      t.insert(124);
       t.insert(123);
       t.insert(9821);
-      // t.insert(124);
-      // t.insert(972);
+      t.insert(972);
       cout << t.dump();
-      assert(t.dump() == "0\n 1\n  2\n   3\n 9\n  8\n   2\n    1\n");
+      assert(t.dump() == 
+         "0\n"
+         " 1\n"
+         "  2\n"
+         "   3\n"
+         "   4\n"
+         " 9\n"
+         "  7\n"
+         "   2\n"
+         "  8\n"
+         "   2\n"
+         "    1\n");
+   }
+
+   void trie_insert_string_test() {
+      Trie<string> t([](string val) -> vector<string> {
+         vector<string> v;
+         regex period("\\.");
+         regex_token_iterator<string::iterator> tokit(
+            val.begin(), val.end(), period, -1);
+         regex_token_iterator<string::iterator> tokend;
+         while (tokit != tokend) v.emplace_back(*tokit++);
+         return v;
+      });
+
+      t.insert("foo");
+      t.insert("foo.bar");
+      t.insert("mu");
+      t.insert("mu.bar");
+      t.insert("foo.baz");
+      cout << t.dump();
+
+      assert(t.dump() == 
+         "\n"
+         " foo\n"
+         "  bar\n"
+         "  baz\n"
+         " mu\n"
+         "  bar\n");
    }
 };
 
 int main() {
    TrieTest test;
    test.node_test();
-   test.trie_insert_test();
+   test.trie_insert_int_test();
+   test.trie_insert_string_test();
 }
