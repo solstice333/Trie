@@ -40,6 +40,11 @@ private:
          }
       }
 
+      void _delete_children() {
+         for (auto nit = _children.begin(); nit != _children.end(); ++nit)
+            delete nit->second;
+      }
+
    public:
       Node(): _parent(nullptr), _value(T()), _end(false) {}
 
@@ -47,6 +52,11 @@ private:
          _parent(parent), _value(value), _end(end) {}
 
       Node(const Node &other) {
+         _deep_copy_tree(const_cast<Node *>(&other), this, other._parent);
+      }
+
+      Node& operator=(const Node &other) {
+         _delete_children();
          _deep_copy_tree(const_cast<Node *>(&other), this, other._parent);
       }
 
@@ -103,10 +113,7 @@ private:
          return ss.str();
       }
 
-      ~Node() {
-         for (auto nit = _children.begin(); nit != _children.end(); ++nit)
-            delete nit->second;
-      }
+      ~Node() { _delete_children(); }
    };
 
    Node *_root;
@@ -292,6 +299,34 @@ public:
       assert(root.str() != copy3.str());
       assert(IntTrie::_str(&copy3) == IntTrie::_str(&root));
    }
+
+   void node_copy_assign() {
+      typedef Trie<int>::Node Node;
+      typedef Trie<int> IntTrie;
+
+      Node root;
+      Node copy;
+      copy = root;
+      assert(copy.children().empty());
+
+      Node *child_a = new Node(&root, 1, true);
+      root.children()[1] = child_a;
+
+      Node copy2;
+      copy2 = root;
+      assert(root.children().at(1) != copy2.children().at(1));
+      assert(root.children().at(1)->value() == copy2.children().at(1)->value());
+
+      Node *child_b = new Node(&root, 2, true);
+      root.children()[2] = child_b;
+      Node *child_c = new Node(child_a, 3, true);
+      child_a->children()[3] = child_c;
+
+      Node copy3;
+      copy3 = root;
+      assert(root.str() != copy3.str());
+      assert(IntTrie::_str(&copy3) == IntTrie::_str(&root));
+   }
 };
 
 int main() {
@@ -300,4 +335,5 @@ int main() {
    test.trie_insert_int_test();
    test.trie_insert_string_test();
    test.node_copy_ctor();
+   test.node_copy_assign();
 }
