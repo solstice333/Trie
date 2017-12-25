@@ -116,7 +116,7 @@ private:
       ~Node() { _delete_children(); }
    };
 
-   Node _root;
+   Node *_root;
    function<vector<T>(T)> _split;
 
    typedef priority_queue<Node *, vector<Node *>, 
@@ -152,13 +152,15 @@ public:
    };
 
    Trie(const function<vector<T>(T)> &split_algo): 
-      _split(split_algo) {}
+      _root(new Node()), _split(split_algo) {}
 
-   Trie(const Trie<T> &other): _root(other._root), _split(other._split) {}
+   Trie(const Trie<T> &other): _root(new Node()), _split(other._split) {
+      *_root = *other._root;
+   }
 
    void insert(const T &key) {
       vector<T> subkeys = _split(key);
-      Node *curr = &_root;
+      Node *curr = _root;
       for (auto key_it = subkeys.begin(); key_it != subkeys.end(); ++key_it) {
          if (curr->has_child(*key_it))
             curr = curr->get_child(*key_it);
@@ -171,7 +173,7 @@ public:
    // TODO: implement this after end()
    // T find(const T &key) {
    //    vector<T> subkeys = _split(key);
-   //    Node *curr = &_root;
+   //    Node *curr = _root;
    //    for (auto key_it = subkeys.begin(); key_it != subkeys.end(); ++key_it) {
    //       if (curr_has)   
    //    }
@@ -180,7 +182,9 @@ public:
    // TODO test this after copy ctor and assignment operator
    iterator end() { return iterator(); }
 
-   string str() { return _str(&_root); }
+   string str() { return _str(_root); }
+
+   ~Trie() { delete _root; }
 };
 
 template<typename T>
@@ -340,8 +344,8 @@ public:
       t2.insert(13);
 
       assert(t.str() != t2.str());
-      assert(&t._root != &t2._root);
-      assert(t._root.children().at(1) != t2._root.children().at(1));
+      assert(t._root != t2._root);
+      assert(t._root->children().at(1) != t2._root->children().at(1));
    }
 };
 
