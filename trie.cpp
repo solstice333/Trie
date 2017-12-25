@@ -159,12 +159,11 @@ public:
       *_root = *other._root;
    }
 
-   // TODO test
    Trie& operator=(const Trie<T> &other) {
       delete _root;
       _root = new Node();
       *_root = *other._root;
-      _split(other._split);
+      _split = other._split;
    }
 
    void insert(const T &key) {
@@ -356,6 +355,26 @@ public:
       assert(t._root != t2._root);
       assert(t._root->children().at(1) != t2._root->children().at(1));
    }
+
+   void trie_copy_assign() {
+      typedef Trie<int> IntTrie;
+      typedef Trie<int>::Node IntNode;
+
+      IntTrie t(get_int_split_func());
+      t.insert(123);
+      t.insert(122);
+      IntTrie t2([](int x) -> vector<int> { return vector<int>(); });
+      t2 = t;
+
+      assert(t.str() == t2.str());
+
+      t.insert(23);
+      t2.insert(13);
+
+      assert(t.str() != t2.str());
+      assert(t._root != t2._root);
+      assert(t._root->children().at(1) != t2._root->children().at(1));
+   }
 };
 
 int main() {
@@ -366,4 +385,5 @@ int main() {
    test.node_copy_ctor();
    test.node_copy_assign();
    test.trie_copy_ctor();
+   test.trie_copy_assign();
 }
