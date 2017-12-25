@@ -214,6 +214,10 @@ private:
       };
    }
 
+   Trie<int> get_mock_int_trie() {
+      return Trie<int>(get_int_split_func());
+   }
+
 public:
    void node_test() {
       Trie<int>::Node root;
@@ -375,6 +379,19 @@ public:
       assert(t._root != t2._root);
       assert(t._root->children().at(1) != t2._root->children().at(1));
    }
+
+   void trie_get_mock() {
+      auto t = get_mock_int_trie();
+      t.insert(143);
+      t.insert(132);
+      assert(t.str() == 
+         "0\n"
+         " 1\n"
+         "  3\n"
+         "   2\n"
+         "  4\n"
+         "   3\n");
+   }
 };
 
 int main() {
@@ -386,4 +403,5 @@ int main() {
    test.node_copy_assign();
    test.trie_copy_ctor();
    test.trie_copy_assign();
+   test.trie_get_mock();
 }
