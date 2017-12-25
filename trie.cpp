@@ -118,6 +118,7 @@ private:
 
    Node _root;
    function<vector<T>(T)> _split;
+
    typedef priority_queue<Node *, vector<Node *>, 
       function<bool(const Node *, const Node *)>> _NodePtrPQ; 
 
@@ -153,8 +154,7 @@ public:
    Trie(const function<vector<T>(T)> &split_algo): 
       _split(split_algo) {}
 
-   // TODO
-   Trie(const Trie &other): _root(other) {}
+   Trie(const Trie<T> &other): _root(other._root), _split(other._split) {}
 
    void insert(const T &key) {
       vector<T> subkeys = _split(key);
@@ -324,6 +324,25 @@ public:
       assert(root.str() != copy3.str());
       assert(IntTrie::_str(&copy3) == IntTrie::_str(&root));
    }
+
+   void trie_copy_ctor() {
+      typedef Trie<int> IntTrie;
+      typedef Trie<int>::Node IntNode;
+
+      IntTrie t(get_int_split_func());
+      t.insert(123);
+      t.insert(122);
+      IntTrie t2 = t;
+
+      assert(t.str() == t2.str());
+
+      t.insert(23);
+      t2.insert(13);
+
+      assert(t.str() != t2.str());
+      assert(&t._root != &t2._root);
+      assert(t._root.children().at(1) != t2._root.children().at(1));
+   }
 };
 
 int main() {
@@ -333,4 +352,5 @@ int main() {
    test.trie_insert_string_test();
    test.node_copy_ctor();
    test.node_copy_assign();
+   test.trie_copy_ctor();
 }
