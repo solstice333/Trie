@@ -43,6 +43,7 @@ private:
       void _delete_children() {
          for (auto nit = _children.begin(); nit != _children.end(); ++nit)
             delete nit->second;
+         _children.clear();
       }
 
    public:
@@ -156,6 +157,14 @@ public:
 
    Trie(const Trie<T> &other): _root(new Node()), _split(other._split) {
       *_root = *other._root;
+   }
+
+   // TODO test
+   Trie& operator=(const Trie<T> &other) {
+      delete _root;
+      _root = new Node();
+      *_root = *other._root;
+      _split(other._split);
    }
 
    void insert(const T &key) {
