@@ -13,12 +13,9 @@
 
 using namespace std;
 
-template<typename T> class TrieIterator;
-
 template<typename T>
 class Trie {
    friend class TrieTest;
-   friend class TrieIterator<T>;
 
 private:
    class Node {
@@ -69,7 +66,7 @@ private:
          return _children.at(key);
       }
 
-      Node *add_child(const T &key, bool end) {
+      Node *add_child(const T &key, bool end = false) {
          _children[key] = new Node(this, key, end);
          return _children[key];
       }
@@ -101,6 +98,10 @@ private:
       bool operator>=(const Node &other) const { 
          return _value >= other._value; 
       }
+
+      bool end() { return _end; }
+
+      void end(bool val) { _end = val; }
 
       string str() {
          stringstream ss;
@@ -141,15 +142,16 @@ private:
    }
 
 public:
-   class iterator: public TrieIterator<T> {
+   class iterator: public std::iterator<random_access_iterator_tag, Node> {
+      friend class Trie<T>;
    private:
-      T *_val;
-   public:
+      Node *_val;
       iterator(): _val(nullptr) {}
-      iterator(T *val): _val(val) {}
-      bool operator==(const iterator *other) { return _val == other._val; }
-      bool operator!=(const iterator *other) { return _val != other._val; }
-      T& operator*() { return *_val; }
+      iterator(Node *val): _val(val) {}
+   public:
+      bool operator==(const iterator &other) { return _val == other._val; }
+      bool operator!=(const iterator &other) { return _val != other._val; }
+      T operator*() { return _val->value(); }
    };
 
    Trie(const function<vector<T>(T)> &split_algo): 
@@ -169,35 +171,29 @@ public:
    void insert(const T &key) {
       vector<T> subkeys = _split(key);
       Node *curr = _root;
+      for (auto key_it = subkeys.begin(); key_it != subkeys.end(); ++key_it)
+         curr = curr->has_child(*key_it) ? 
+            curr->get_child(*key_it) : curr->add_child(*key_it);
+      curr->end(true);
+   }
+
+   iterator find(const T &key) {
+      vector<T> subkeys = _split(key);
+      Node *curr = _root;
       for (auto key_it = subkeys.begin(); key_it != subkeys.end(); ++key_it) {
          if (curr->has_child(*key_it))
             curr = curr->get_child(*key_it);
          else
-            curr = curr->add_child(*key_it,
-               key_it == subkeys.end() - 1 ? true : false);
+            return end();
       }
+      return curr->end() ? iterator(curr) : end();
    }
 
-   // TODO: implement this after end()
-   // T find(const T &key) {
-   //    vector<T> subkeys = _split(key);
-   //    Node *curr = _root;
-   //    for (auto key_it = subkeys.begin(); key_it != subkeys.end(); ++key_it) {
-   //       if (curr_has)   
-   //    }
-   // }
-
-   // TODO test this after copy ctor and assignment operator
    iterator end() { return iterator(); }
 
    string str() { return _str(_root); }
 
    ~Trie() { delete _root; }
-};
-
-template<typename T>
-class TrieIterator: public iterator<random_access_iterator_tag, T> {
-
 };
 
 class TrieTest {
@@ -392,6 +388,64 @@ public:
          "  4\n"
          "   3\n");
    }
+
+   void trie_end_iter() {
+      auto t = get_mock_int_trie();
+      assert(t.end() == t.end());
+   }
+
+   void trie_find() {
+      auto t = get_mock_int_trie();
+      t.insert(143);
+      t.insert(132);
+      assert(t.find(143) != t.end());
+      assert(*t.find(143) == 3);
+      assert(t.find(132) != t.end());
+      assert(*t.find(132) == 2);
+
+      assert(t.find(25) == t.end());
+      assert(t.find(400) == t.end());
+      assert(t.find(13) == t.end());
+      assert(t.find(0) == t.end());
+
+      t.insert(13);
+      assert(t.find(13) != t.end());
+      assert(t.find(1) == t.end());
+
+      t.insert(1);
+      assert(t.find(1) != t.end());
+   }
+
+   void trie_find_string_test() {
+      Trie<string> t([](string val) -> vector<string> {
+         vector<string> v;
+         regex period("\\.");
+         regex_token_iterator<string::iterator> tokit(
+            val.begin(), val.end(), period, -1);
+         regex_token_iterator<string::iterator> tokend;
+         while (tokit != tokend) v.emplace_back(*tokit++);
+         return v;
+      });
+
+      t.insert("foo");
+      t.insert("foo.bar");
+      t.insert("mu");
+      t.insert("mu.bar");
+      t.insert("foo.baz");
+ 
+      assert(t.find("foo") != t.end());
+      assert(t.find("foo.bar") != t.end());
+      assert(t.find("mu") != t.end());
+      assert(t.find("mu.bar") != t.end());
+      assert(t.find("foo.baz") != t.end());
+      assert(t.find("mu.baz") == t.end());
+
+      assert(*t.find("foo") == "foo");
+      assert(*t.find("foo.bar") == "bar");
+      assert(*t.find("mu") == "mu");
+      assert(*t.find("mu.bar") == "bar");
+      assert(*t.find("foo.baz") == "baz");
+   }
 };
 
 int main() {
@@ -404,4 +458,7 @@ int main() {
    test.trie_copy_ctor();
    test.trie_copy_assign();
    test.trie_get_mock();
+   test.trie_end_iter();
+   test.trie_find();
+   test.trie_find_string_test();
 }
