@@ -164,7 +164,8 @@ public:
       iterator(): _val(nullptr) {}
       iterator(Node *val, const ConcatFunc &concat_algo): 
          _val(val), _subkeys(val->subkeys()), _concat(concat_algo) {}
-      iterator _parent() { return iterator(_val->parent(), _concat); }
+      iterator _parent() const { return iterator(_val->parent(), _concat); }
+      bool _is_root() { return !_val->parent(); }
 
    public:
       bool operator==(const iterator &other) { return _val == other._val; }
@@ -210,16 +211,13 @@ public:
       return curr->end() ? iterator(curr, _concat) : end();
    }
 
-   // TODO
    iterator find_parent(const iterator &it) { 
-      Node *p = it->parent();
-      throw runtime_error("NotYetImplemented");
+      iterator itr = it._parent();
+      return itr._is_root() ? end() : itr;
    }
 
    iterator end() { return iterator(); }
-
    string str() { return _str(_root); }
-
    ~Trie() { delete _root; }
 };
 
@@ -402,6 +400,11 @@ public:
       assert(t.str() != t2.str());
       assert(t._root != t2._root);
       assert(t._root->children().at(1) != t2._root->children().at(1));
+
+      assert(*t2.find(123) == 123);
+      assert(*t.find(123) == 123);
+      assert(*t2.find(13) == 13);
+      assert(*t.find(23) == 23);
    }
 
    void trie_copy_assign() {
@@ -424,6 +427,11 @@ public:
       assert(t.str() != t2.str());
       assert(t._root != t2._root);
       assert(t._root->children().at(1) != t2._root->children().at(1));
+
+      assert(*t2.find(123) == 123);
+      assert(*t.find(123) == 123);
+      assert(*t2.find(13) == 13);
+      assert(*t.find(23) == 23);
    }
 
    void trie_get_mock() {
@@ -488,6 +496,28 @@ public:
       assert(*t.find("mu.bar") == "mu.bar");
       assert(*t.find("foo.baz") == "foo.baz");
    }
+
+   void trie_find_parent() {
+      Trie<int> t(get_int_split_func(), get_int_concat_func());
+      t.insert(482);
+      t.insert(410);
+      
+      auto it = t.find(482);
+      it = t.find_parent(it);
+      assert(*it == 48);
+      it = t.find_parent(it);
+      assert(*it == 4);
+
+      it = t.find(410);
+      it = t.find_parent(it);
+      assert(*it == 41);
+      it = t.find_parent(it);
+      assert(*it == 4);
+      assert(it != t.end());
+
+      it = t.find_parent(it);
+      assert(it == t.end());
+   }
 };
 
 int main() {
@@ -503,4 +533,5 @@ int main() {
    test.trie_end_iter();
    test.trie_find();
    test.trie_find_string_test();
+   test.trie_find_parent();
 }
