@@ -1,6 +1,10 @@
 #include <iostream>
 #include <cassert>
 #include <functional>
+#include <regex>
+#include <vector>
+#include <string>
+#include <iterator>
 #include "trie.h"
 
 class TrieTest {
