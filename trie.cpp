@@ -166,6 +166,7 @@ public:
          _val(val), _subkeys(val->subkeys()), _concat(concat_algo) {}
       iterator _parent() const { return iterator(_val->parent(), _concat); }
       bool _is_root() { return !_val->parent(); }
+      bool _is_leaf() { return _val->end(); }
 
    public:
       bool operator==(const iterator &other) { return _val == other._val; }
@@ -213,7 +214,7 @@ public:
 
    iterator find_parent(const iterator &it) { 
       iterator itr = it._parent();
-      return itr._is_root() ? end() : itr;
+      return itr._is_root() || !itr._is_leaf() ? end() : itr;
    }
 
    iterator end() { return iterator(); }
@@ -501,22 +502,25 @@ public:
       Trie<int> t(get_int_split_func(), get_int_concat_func());
       t.insert(482);
       t.insert(410);
-      
+
       auto it = t.find(482);
       it = t.find_parent(it);
-      assert(*it == 48);
-      it = t.find_parent(it);
-      assert(*it == 4);
+      assert(it == t.end());
 
       it = t.find(410);
-      it = t.find_parent(it);
-      assert(*it == 41);
-      it = t.find_parent(it);
-      assert(*it == 4);
-      assert(it != t.end());
+      assert(t.find_parent(it) == t.end());
 
+      t.insert(41);
       it = t.find_parent(it);
-      assert(it == t.end());
+      assert(it != t.end());
+      assert(*it == 41);
+      assert(t.find_parent(it) == t.end());
+
+      t.insert(4);
+      it = t.find_parent(it);
+      assert(it != t.end());
+      assert(*it == 4);
+      assert(t.find_parent(it) == t.end());
    }
 };
 
