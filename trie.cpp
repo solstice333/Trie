@@ -71,6 +71,8 @@ private:
          return _children[key];
       }
 
+      Node *parent() { return _parent; }
+
       T value() const { return _value; }
 
       map<T, Node *>& children() { return _children; }
@@ -103,6 +105,14 @@ private:
 
       void end(bool val) { _end = val; }
 
+      vector<T> subkeys() {
+         vector<T> skeys;
+         for (Node *curr = this; curr->_parent; curr = curr->_parent)
+            skeys.emplace_back(curr->_value);
+         reverse(skeys.begin(), skeys.end());
+         return skeys;
+      }
+
       string str() {
          stringstream ss;
          ss << "(parent: " << _parent << ", value: " << _value
@@ -120,6 +130,7 @@ private:
 
    Node *_root;
    function<vector<T>(T)> _split;
+   function<T(const vector<T>&)> _concat;
 
    typedef priority_queue<Node *, vector<Node *>, 
       function<bool(const Node *, const Node *)>> _NodePtrPQ; 
@@ -145,19 +156,28 @@ public:
    class iterator: public std::iterator<random_access_iterator_tag, Node> {
       friend class Trie<T>;
    private:
+      typedef function<T(const vector<T>&)> ConcatFunc;
       Node *_val;
+      vector<T> _subkeys;
+      ConcatFunc _concat;
+
       iterator(): _val(nullptr) {}
-      iterator(Node *val): _val(val) {}
+      iterator(Node *val, const ConcatFunc &concat_algo): 
+         _val(val), _subkeys(val->subkeys()), _concat(concat_algo) {}
+      iterator _parent() { return iterator(_val->parent(), _concat); }
+
    public:
       bool operator==(const iterator &other) { return _val == other._val; }
       bool operator!=(const iterator &other) { return _val != other._val; }
-      T operator*() { return _val->value(); }
+      T operator*() { return _concat(_subkeys); }
    };
 
-   Trie(const function<vector<T>(T)> &split_algo): 
-      _root(new Node()), _split(split_algo) {}
+   Trie(const function<vector<T>(T)> &split_algo, 
+      const function<T(vector<T>)> &concat_algo):
+      _root(new Node()), _split(split_algo), _concat(concat_algo) {}
 
-   Trie(const Trie<T> &other): _root(new Node()), _split(other._split) {
+   Trie(const Trie<T> &other): 
+      _root(new Node()), _split(other._split), _concat(other._concat) {
       *_root = *other._root;
    }
 
@@ -166,6 +186,7 @@ public:
       _root = new Node();
       *_root = *other._root;
       _split = other._split;
+      _concat = other._concat;
    }
 
    void insert(const T &key) {
@@ -186,7 +207,13 @@ public:
          else
             return end();
       }
-      return curr->end() ? iterator(curr) : end();
+      return curr->end() ? iterator(curr, _concat) : end();
+   }
+
+   // TODO
+   iterator find_parent(const iterator &it) { 
+      Node *p = it->parent();
+      throw runtime_error("NotYetImplemented");
    }
 
    iterator end() { return iterator(); }
@@ -210,8 +237,44 @@ private:
       };
    }
 
+   function<int(const vector<int>&)> get_int_concat_func() {
+      return [](const vector<int> &v) -> int {
+         int val = 0;
+         for (auto it = v.begin(); it != v.end(); ++it) {
+            val += *it;
+            if (it != prev(v.end(), 1))
+               val *= 10;
+         }
+         return val;
+      };
+   }
+
+   function<vector<string>(string)> get_string_split_func() {
+      return [](string val) -> vector<string> {
+         vector<string> v;
+         regex period("\\.");
+         regex_token_iterator<string::iterator> tokit(
+            val.begin(), val.end(), period, -1);
+         regex_token_iterator<string::iterator> tokend;
+         while (tokit != tokend) v.emplace_back(*tokit++);
+         return v;
+      };
+   }
+
+   function<string(const vector<string>&)> get_string_concat_func() {
+      return [](const vector<string> &v) -> string {
+         stringstream ss;
+         for (auto i = v.begin(); i != v.end(); ++i) {
+            ss << *i;
+            if (i != prev(v.end(), 1))
+               ss << ".";
+         }
+         return ss.str();
+      };
+   }
+
    Trie<int> get_mock_int_trie() {
-      return Trie<int>(get_int_split_func());
+      return Trie<int>(get_int_split_func(), get_int_concat_func());
    }
 
 public:
@@ -229,14 +292,7 @@ public:
    }
 
    void trie_insert_int_test() {
-      Trie<int> t([](int val) -> vector<int> {
-         vector<int> v;
-         while (val) {
-            v.emplace_back(val%10);
-            val /= 10;   
-         }
-         reverse(v.begin(), v.end());
-         return v; });
+      Trie<int> t(get_int_split_func(), get_int_concat_func());
 
       t.insert(124);
       t.insert(123);
@@ -258,15 +314,7 @@ public:
    }
 
    void trie_insert_string_test() {
-      Trie<string> t([](string val) -> vector<string> {
-         vector<string> v;
-         regex period("\\.");
-         regex_token_iterator<string::iterator> tokit(
-            val.begin(), val.end(), period, -1);
-         regex_token_iterator<string::iterator> tokend;
-         while (tokit != tokend) v.emplace_back(*tokit++);
-         return v;
-      });
+      Trie<string> t(get_string_split_func(), get_string_concat_func());
 
       t.insert("foo");
       t.insert("foo.bar");
@@ -341,7 +389,7 @@ public:
       typedef Trie<int> IntTrie;
       typedef Trie<int>::Node IntNode;
 
-      IntTrie t(get_int_split_func());
+      IntTrie t(get_int_split_func(), get_int_concat_func());
       t.insert(123);
       t.insert(122);
       IntTrie t2 = t;
@@ -360,10 +408,12 @@ public:
       typedef Trie<int> IntTrie;
       typedef Trie<int>::Node IntNode;
 
-      IntTrie t(get_int_split_func());
+      IntTrie t(get_int_split_func(), get_int_concat_func());
       t.insert(123);
       t.insert(122);
-      IntTrie t2([](int x) -> vector<int> { return vector<int>(); });
+      IntTrie t2(
+         [](int x) -> vector<int> { return vector<int>(); }, 
+         [](const vector<int> &v) -> int { return 0; });
       t2 = t;
 
       assert(t.str() == t2.str());
@@ -399,9 +449,9 @@ public:
       t.insert(143);
       t.insert(132);
       assert(t.find(143) != t.end());
-      assert(*t.find(143) == 3);
+      assert(*t.find(143) == 143);
       assert(t.find(132) != t.end());
-      assert(*t.find(132) == 2);
+      assert(*t.find(132) == 132);
 
       assert(t.find(25) == t.end());
       assert(t.find(400) == t.end());
@@ -417,15 +467,7 @@ public:
    }
 
    void trie_find_string_test() {
-      Trie<string> t([](string val) -> vector<string> {
-         vector<string> v;
-         regex period("\\.");
-         regex_token_iterator<string::iterator> tokit(
-            val.begin(), val.end(), period, -1);
-         regex_token_iterator<string::iterator> tokend;
-         while (tokit != tokend) v.emplace_back(*tokit++);
-         return v;
-      });
+      Trie<string> t(get_string_split_func(), get_string_concat_func());
 
       t.insert("foo");
       t.insert("foo.bar");
@@ -441,10 +483,10 @@ public:
       assert(t.find("mu.baz") == t.end());
 
       assert(*t.find("foo") == "foo");
-      assert(*t.find("foo.bar") == "bar");
+      assert(*t.find("foo.bar") == "foo.bar");
       assert(*t.find("mu") == "mu");
-      assert(*t.find("mu.bar") == "bar");
-      assert(*t.find("foo.baz") == "baz");
+      assert(*t.find("mu.bar") == "mu.bar");
+      assert(*t.find("foo.baz") == "foo.baz");
    }
 };
 
