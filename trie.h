@@ -150,7 +150,7 @@ private:
    }
 
 public:
-   class iterator: public std::iterator<random_access_iterator_tag, Node> {
+   class iterator: public std::iterator<bidirectional_iterator_tag, Node> {
       friend class Trie<T>;
    private:
       typedef function<T(const vector<T>&)> ConcatFunc;
