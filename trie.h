@@ -52,6 +52,7 @@ private:
       Node& operator=(const Node &other) {
          _delete_children();
          _deep_copy_tree(const_cast<Node *>(&other), this, other._parent);
+         return *this;
       }
 
       bool has_child(const T &key) const {
@@ -185,6 +186,7 @@ public:
       *_root = *other._root;
       _split = other._split;
       _concat = other._concat;
+      return *this;
    }
 
    void insert(const T &key) {
