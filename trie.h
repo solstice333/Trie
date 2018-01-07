@@ -5,7 +5,6 @@
 #include <sstream>
 #include <queue>
 #include <string>
-#include <regex>
 #include <iterator>
 
 using namespace std;
