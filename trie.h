@@ -158,7 +158,6 @@ public:
       vector<T> _subkeys;
       ConcatFunc _concat;
 
-      iterator(): _val(nullptr) {}
       iterator(Node *val, const ConcatFunc &concat_algo): 
          _val(val), _subkeys(val->subkeys()), _concat(concat_algo) {}
       iterator _parent() const { return iterator(_val->parent(), _concat); }
@@ -166,6 +165,7 @@ public:
       bool _is_leaf() { return _val->end(); }
 
    public:
+      iterator(): _val(nullptr) {}
       bool operator==(const iterator &other) { return _val == other._val; }
       bool operator!=(const iterator &other) { return _val != other._val; }
       T operator*() { return _concat(_subkeys); }

@@ -268,6 +268,10 @@ public:
       t.insert("mu");
       t.insert("mu.bar");
       t.insert("foo.baz");
+
+      Trie<string>::iterator it;
+      it = t.find("foo");
+      assert(*it == "foo");
  
       assert(t.find("foo") != t.end());
       assert(t.find("foo.bar") != t.end());
