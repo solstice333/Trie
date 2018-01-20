@@ -33,13 +33,13 @@ private:
       };
    }
 
-   function<vector<string>(string)> get_string_split_func() {
-      return [](string val) -> vector<string> {
+   function<vector<string>(const string&)> get_string_split_func() {
+      return [](const string &val) -> vector<string> {
          vector<string> v;
          regex period("\\.");
-         regex_token_iterator<string::iterator> tokit(
+         regex_token_iterator<string::const_iterator> tokit(
             val.begin(), val.end(), period, -1);
-         regex_token_iterator<string::iterator> tokend;
+         regex_token_iterator<string::const_iterator> tokend;
          while (tokit != tokend) v.emplace_back(*tokit++);
          return v;
       };
