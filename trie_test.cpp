@@ -311,6 +311,23 @@ public:
       assert(*it == 4);
       assert(t.find_parent(it) == t.end());
    }
+
+   void trie_clear_test() {
+      auto t = get_mock_int_trie();
+      t.insert(1);
+      t.insert(12);
+      t.insert(2);
+      t.insert(123);
+      assert(t.str() == 
+         "0\n"
+         " 1\n"
+         "  2\n"
+         "   3\n"
+         " 2\n");
+      t.clear();
+      assert(t.str() == 
+         "0\n");
+   }
 };
 
 int main() {
@@ -327,4 +344,5 @@ int main() {
    test.trie_find();
    test.trie_find_string_test();
    test.trie_find_parent();
+   test.trie_clear_test();
 }

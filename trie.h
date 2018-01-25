@@ -216,6 +216,12 @@ public:
    }
 
    iterator end() { return iterator(); }
+
+   void clear() {
+      delete _root;
+      _root = new Node();
+   }
+
    string str() { return _str(_root); }
    ~Trie() { delete _root; }
 };
