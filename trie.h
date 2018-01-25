@@ -166,9 +166,16 @@ public:
 
    public:
       iterator(): _val(nullptr) {}
-      bool operator==(const iterator &other) { return _val == other._val; }
-      bool operator!=(const iterator &other) { return _val != other._val; }
-      T operator*() { return _concat(_subkeys); }
+
+      bool operator==(const iterator &other) const { 
+         return _val == other._val; 
+      }
+
+      bool operator!=(const iterator &other) const { 
+         return _val != other._val; 
+      }
+
+      T operator*() const { return _concat(_subkeys); }
    };
 
    Trie(const function<vector<T>(T)> &split_algo, 
@@ -211,6 +218,8 @@ public:
    }
 
    iterator find_parent(const iterator &it) { 
+      if (it == end())
+         return end();
       iterator itr = it._parent();
       return itr._is_root() || !itr._is_leaf() ? end() : itr;
    }

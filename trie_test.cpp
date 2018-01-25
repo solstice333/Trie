@@ -310,6 +310,8 @@ public:
       assert(it != t.end());
       assert(*it == 4);
       assert(t.find_parent(it) == t.end());
+
+      assert(t.find_parent(t.end()) == t.end());
    }
 
    void trie_clear_test() {
